@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Restaurant Cashier Training</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script
+        src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+
+    <style>
+        #start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #d35400, #2c3e50);
+            color: white;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+            text-align: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-classic {
+            background: #7f8c8d;
+        }
+
+        .btn-ai {
+            background: linear-gradient(45deg, #f1c40f, #e67e22);
+            color: #000;
+        }
+
+        .btn-ai:hover {
+            transform: scale(1.05);
+        }
+
+        .loading-text {
+            display: none;
+            margin-top: 15px;
+            color: #f1c40f;
+            font-style: italic;
+        }
+
+        .flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9998;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #red-flash-overlay {
+            background-color: darkred;
+        }
+
+        #green-flash-overlay {
+            background-color: #2ecc71;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="red-flash-overlay" class="flash-overlay"></div>
+    <div id="green-flash-overlay" class="flash-overlay"></div>
+
+    <div id="start-overlay">
+        <h1 style="color: #f1c40f; text-shadow: 2px 2px 4px #000;">VR Restaurant Cashier Training</h1>
+        <p>Welcome to <strong>Milani</strong> Restaurant.</p>
+        <p style="font-size: 0.9em; color: #ffcccb;">Make the customer HAPPY, don't make them ANGRY!</p>
+        <div class="btn-group">
+            <button class="btn-classic" onclick="startGame('classic')">Classic Mode</button>
+            <button class="btn-ai" onclick="startGame('ai')">Gemini AI Mode ✨</button>
+        </div>
+        <div id="loading-msg" class="loading-text">Customer is approaching...</div>
+        <div id="error-msg" style="color: red; display: none; margin-top: 10px;"></div>
+    </div>
+
+    <a-scene background="color: #F5F5DC" renderer="antialias: true; colorManagement: true; highRefreshRate: true;">
+        <a-assets>
+            <img id="floor-tex" src="https://cdn.aframe.io/a-painter/images/floor.jpg" crossorigin="anonymous">
+            <a-mixin id="btn-bg" geometry="primitive: box; width: 2.8; depth: 0.05" material="color: #d35400"></a-mixin>
+            <a-mixin id="btn-text"
+                text="font: roboto; align: center; color: white; width: 2.6; wrap-count: 22; lineHeight: 60"></a-mixin>
+            <a-mixin id="chair" geometry="primitive: box; width: 0.6; height: 0.8; depth: 0.1"
+                material="color: #8B4513"></a-mixin>
+            <a-mixin id="table-set" geometry="primitive: cylinder; radius: 1.5; height: 0.1"
+                material="color: #FFF"></a-mixin>
+        </a-assets>
+
+        <!-- ENVIRONMENT -->
+        <a-plane position="0 0 -10" rotation="-90 0 0" width="40" height="40" color="#5D4037"
+            material="roughness: 0.8; src: #floor-tex; repeat: 12 12"></a-plane>
+        <a-box position="0 12 -10" width="40" height="0.5" depth="40" color="#FFF8DC"></a-box>
+
+        <!-- Walls -->
+        <a-box position="0 6 -30" width="40" height="12" depth="0.5" color="#FFE4B5"></a-box>
+        <a-box position="0 2.5 -29.7" width="4" height="5" depth="0.2" color="#3E2723"></a-box>
+        <a-box position="-0.1 2.5 -29.6" width="1.8" height="4.8" depth="0.1" color="#5D4037"></a-box>
+        <a-box position="2.1 2.5 -29.6" width="1.8" height="4.8" depth="0.1" color="#5D4037"></a-box>
+        <a-text value="EXIT" position="0 5.5 -29.6" align="center" color="green" width="10"></a-text>
+
+        <a-box position="-20 6 -10" rotation="0 90 0" width="40" height="12" depth="0.5" color="#DEB887"></a-box>
+        <a-plane position="-19.6 5 -15" rotation="0 90 0" width="6" height="4" color="#87CEEB"
+            material="opacity: 0.7; metalness: 0.9"></a-plane>
+        <a-plane position="-19.6 5 -5" rotation="0 90 0" width="6" height="4" color="#87CEEB"
+            material="opacity: 0.7; metalness: 0.9"></a-plane>
+
+        <a-box position="20 6 -10" rotation="0 90 0" width="40" height="12" depth="0.5" color="#DEB887"></a-box>
+        <a-plane position="19.6 5 -15" rotation="0 -90 0" width="6" height="4" color="#87CEEB"
+            material="opacity: 0.7; metalness: 0.9"></a-plane>
+        <a-plane position="19.6 5 -5" rotation="0 -90 0" width="6" height="4" color="#87CEEB"
+            material="opacity: 0.7; metalness: 0.9"></a-plane>
+
+        <a-entity position="19 7 -5" rotation="0 -90 0">
+            <a-box width="8" height="4" depth="0.1" color="#222"></a-box>
+            <a-text value="MENU" position="0 1.5 0.1" align="center" color="#f1c40f" font="exo2bold"
+                width="10"></a-text>
+            <a-text value="Steak...........$25\nBurgers.........$10\nBeer............$5" position="0 0 0.1"
+                align="center" color="white" width="8"></a-text>
+        </a-entity>
+
+        <!-- SIGNBOARD MILANI (NEW LOCATION - Left Wall) -->
+        <!-- Positioned on the left wall, facing the room -->
+        <a-entity position="-19.5 8 -10" rotation="0 90 0">
+            <!-- Papan Kayu Dasar -->
+            <a-box width="10" height="3" depth="0.2" color="#3E2723" material="src: #floor-tex; repeat: 2 1"></a-box>
+            <!-- Frame Emas -->
+            <a-box width="10.2" height="3.2" depth="0.1" color="#FFD700" position="0 0 -0.1"></a-box>
+            <!-- Text -->
+            <a-text value="Milani" position="0 0.5 0.15" align="center" color="#FFF" font="exo2bold" width="30"
+                shader="msdf"></a-text>
+            <a-text value="RESTAURANT & BAR" position="0 -0.8 0.15" align="center" color="#f1c40f" font="roboto"
+                width="12" letter-spacing="5"></a-text>
+            <!-- Lampu Sorot ke Plang -->
+            <a-entity light="type: spot; angle: 45; intensity: 2; distance: 10; color: #FFD700" position="0 -2 5"
+                rotation="30 0 0"></a-entity>
+        </a-entity>
+
+        <!-- LIGHTING -->
+        <a-entity light="type: ambient; color: #FFF; intensity: 0.8"></a-entity>
+        <a-entity light="type: point; intensity: 0.5; distance: 30; decay: 2" position="10 9 -15"></a-entity>
+        <a-entity light="type: point; intensity: 0.5; distance: 30; decay: 2" position="-10 9 -15"></a-entity>
+        <a-entity light="type: point; intensity: 0.5; distance: 30; decay: 2" position="0 9 -20"></a-entity>
+
+        <a-entity position="10 10 -15">
+            <a-cone color="#333" radius-bottom="0.5" height="0.5" open-ended="true" position="0 0 0"></a-cone>
+            <a-cylinder color="black" radius="0.05" height="2" position="0 1 0"></a-cylinder>
+            <a-sphere color="#FFF" radius="0.2" position="0 -0.2 0"
+                material="emissive: #FFF; emissiveIntensity: 1"></a-sphere>
+        </a-entity>
+        <a-entity position="-10 10 -15">
+            <a-cone color="#333" radius-bottom="0.5" height="0.5" open-ended="true" position="0 0 0"></a-cone>
+            <a-cylinder color="black" radius="0.05" height="2" position="0 1 0"></a-cylinder>
+            <a-sphere color="#FFF" radius="0.2" position="0 -0.2 0"
+                material="emissive: #FFF; emissiveIntensity: 1"></a-sphere>
+        </a-entity>
+
+        <!-- FURNITURE -->
+        <a-entity position="10 0 -8"><a-entity mixin="table-set" position="0 1 0"></a-entity><a-cylinder
+                position="0 0.5 0" radius="0.2" height="1" color="#444"></a-cylinder><a-box position="0 0.6 -1.5"
+                mixin="chair"></a-box><a-box position="0 0.6 1.5" mixin="chair"></a-box></a-entity>
+        <a-entity position="18 0 -8"><a-entity mixin="table-set" position="0 1 0"></a-entity><a-cylinder
+                position="0 0.5 0" radius="0.2" height="1" color="#444"></a-cylinder><a-box position="0 0.6 -1.5"
+                mixin="chair"></a-box><a-box position="0 0.6 1.5" mixin="chair"></a-box></a-entity>
+        <a-entity position="10 0 -18"><a-entity mixin="table-set" position="0 1 0"></a-entity><a-cylinder
+                position="0 0.5 0" radius="0.2" height="1" color="#444"></a-cylinder><a-box position="0 0.6 -1.5"
+                mixin="chair"></a-box><a-box position="0 0.6 1.5" mixin="chair"></a-box></a-entity>
+        <a-entity position="18 0 -18"><a-entity mixin="table-set" position="0 1 0"></a-entity><a-cylinder
+                position="0 0.5 0" radius="0.2" height="1" color="#444"></a-cylinder><a-box position="0 0.6 -1.5"
+                mixin="chair"></a-box><a-box position="0 0.6 1.5" mixin="chair"></a-box></a-entity>
+        <a-entity position="-10 0 -22"><a-entity mixin="table-set" position="0 1 0"></a-entity><a-cylinder
+                position="0 0.5 0" radius="0.2" height="1" color="#444"></a-cylinder><a-box position="0 0.6 -1.5"
+                mixin="chair"></a-box><a-box position="0 0.6 1.5" mixin="chair"></a-box></a-entity>
+
+        <a-entity position="-10 0 -8" rotation="0 10 0">
+            <a-box position="0 1.4 0" width="4" height="0.3" depth="7" color="#5D4037"></a-box>
+            <a-box position="0 1.56 0" width="3.6" height="0.05" depth="6.6" color="#0B6623"></a-box>
+            <a-box position="-1.8 0.7 -3.3" width="0.3" height="1.4" depth="0.3" color="#3E2723"></a-box>
+            <a-box position="1.8 0.7 -3.3" width="0.3" height="1.4" depth="0.3" color="#3E2723"></a-box>
+            <a-box position="-1.8 0.7 3.3" width="0.3" height="1.4" depth="0.3" color="#3E2723"></a-box>
+            <a-box position="1.8 0.7 3.3" width="0.3" height="1.4" depth="0.3" color="#3E2723"></a-box>
+            <a-sphere position="0 1.63 2" radius="0.08" color="white"></a-sphere>
+            <a-sphere position="0 1.63 -1" radius="0.08" color="black"></a-sphere>
+            <a-sphere position="0.15 1.63 -1.2" radius="0.08" color="red"></a-sphere>
+            <a-cylinder position="2.2 1.6 0" radius="0.03" height="5" rotation="90 0 10" color="#D2691E"></a-cylinder>
+            <a-cone position="0 5 0" radius-bottom="1" height="0.5" color="#333" open-ended="true"></a-cone>
+            <a-entity light="type: spot; angle: 60; penumbra: 0.5; intensity: 1; distance: 10" position="0 4.8 0"
+                rotation="-90 0 0"></a-entity>
+        </a-entity>
+
+        <a-entity position="-18 0 -5"><a-cylinder color="#5D4037" height="1" radius="0.6"></a-cylinder><a-cone
+                color="#228B22" radius-bottom="1" height="2" position="0 1.5 0"></a-cone></a-entity>
+        <a-entity position="18 0 -25"><a-cylinder color="#5D4037" height="1" radius="0.6"></a-cylinder><a-cone
+                color="#228B22" radius-bottom="1" height="2" position="0 1.5 0"></a-cone></a-entity>
+
+        <!-- COUNTER & TIPS -->
+        <a-entity light="type: point; color: #FFA500; intensity: 0.8; distance: 15" position="0 5 -3"></a-entity>
+
+        <a-entity position="0 0 -3">
+            <a-box position="0 1 0" width="4" height="1.2" depth="0.8" color="#5D4037"></a-box>
+            <a-box position="0 1.62 0" width="4.2" height="0.05" depth="0.9" color="#E0E0E0"
+                material="metalness: 0.3; roughness: 0.5"></a-box>
+            <!-- Teks Milani DIHAPUS dari sini -->
+            <a-entity position="0.8 1.65 -0.1" rotation="0 -20 0">
+                <a-box width="0.6" height="0.4" depth="0.05" color="#333" position="0 0.35 0"></a-box>
+                <a-plane width="0.55" height="0.35" color="#3498db" position="0 0.35 0.03"></a-plane>
+                <a-box width="0.15" height="0.3" depth="0.1" color="#555" position="0 0.15 -0.05"></a-box>
+                <a-box width="0.4" height="0.15" depth="0.4" color="#555" position="0 0 -0.05"
+                    rotation="10 0 0"></a-box>
+                <a-box width="0.42" height="0.1" depth="0.42" color="#333" position="0 -0.1 -0.05"></a-box>
+                <a-box width="0.1" height="0.02" depth="0.01" color="silver" position="0 -0.1 0.17"></a-box>
+            </a-entity>
+
+            <a-cylinder position="-1 1.7 0.1" radius="0.15" height="0.2" color="glass" opacity="0.5"></a-cylinder>
+            <a-text value="TIPS" position="-1 1.7 0.1" align="center" width="2" color="green" rotation="0 0 0"></a-text>
+        </a-entity>
+
+        <!-- SUCCESS POPUP UI -->
+        <a-entity id="success-popup" position="0 1.6 -1.5" visible="false" scale="0 0 0">
+            <a-animation attribute="scale" begin="show" to="1 1 1" dur="300" easing="ease-out-back"></a-animation>
+            <a-animation attribute="scale" begin="hide" to="0 0 0" dur="300" easing="ease-in-back"></a-animation>
+            <a-plane width="2.5" height="1.2" color="#2ecc71" material="shader: flat; opacity: 0.95">
+                <a-text value="CORRECT!" align="center" position="0 0.3 0.02" width="8" font="exo2bold"></a-text>
+                <a-text id="success-msg" value="Great job!" align="center" position="0 -0.1 0.02" width="4"
+                    font="roboto"></a-text>
+                <a-circle radius="0.15" position="0 -0.6 0.02" color="white">
+                    <a-text value="OK" align="center" color="#2ecc71" width="6" position="0 0 0"></a-text>
+                </a-circle>
+            </a-plane>
+        </a-entity>
+
+        <!-- NPC / CUSTOMER -->
+        <a-entity light="type: spot; angle: 45; penumbra: 0.3; intensity: 0.7; castShadow: true" position="0 6 -1"
+            target="#npc-container"></a-entity>
+
+        <a-entity id="npc-container" position="0 0 -15" visible="false">
+            <a-entity id="npc-body-group">
+                <a-box id="npc-torso" position="0 1.5 0" width="0.7" height="1.1" depth="0.3" color="#2980b9"></a-box>
+                <a-box id="npc-arm-l" position="-0.45 1.5 0" width="0.2" height="1" depth="0.2" color="#2980b9"></a-box>
+                <a-box id="npc-arm-r" position="0.45 1.5 0" width="0.2" height="1" depth="0.2" color="#2980b9"></a-box>
+
+                <a-entity position="0 2.2 0">
+                    <a-sphere id="npc-head" radius="0.3" color="#FFCC80"></a-sphere>
+                    <a-sphere id="npc-hair" position="0 0.1 0" radius="0.32" color="#2c3e50" theta-length="90"
+                        rotation="90 0 0"></a-sphere>
+
+                    <!-- EYES GROUP -->
+                    <a-sphere id="npc-eye-l" position="-0.1 0.05 0.25" radius="0.04" color="black">
+                        <!-- Heart inside eye (Initially Hidden) -->
+                        <a-text id="love-eye-l" value="♥" color="#e91e63" align="center" width="2" position="0 0 0.05"
+                            visible="false"></a-text>
+                    </a-sphere>
+                    <a-sphere id="npc-eye-r" position="0.1 0.05 0.25" radius="0.04" color="black">
+                        <a-text id="love-eye-r" value="♥" color="#e91e63" align="center" width="2" position="0 0 0.05"
+                            visible="false"></a-text>
+                    </a-sphere>
+
+                    <!-- ANGRY FEATURES -->
+                    <a-box id="brow-l" position="-0.1 0.15 0.25" width="0.15" height="0.03" depth="0.05" color="black"
+                        rotation="0 0 -30" visible="false"></a-box>
+                    <a-box id="brow-r" position="0.1 0.15 0.25" width="0.15" height="0.03" depth="0.05" color="black"
+                        rotation="0 0 30" visible="false"></a-box>
+                    <a-entity id="horns" visible="false">
+                        <a-cone id="horn-l" position="-0.2 0.3 0" radius-bottom="0.08" height="0.6" color="#8B0000"
+                            rotation="0 0 45"></a-cone>
+                        <a-cone id="horn-r" position="0.2 0.3 0" radius-bottom="0.08" height="0.6" color="#8B0000"
+                            rotation="0 0 -45"></a-cone>
+                    </a-entity>
+                    <a-entity id="smoke-emitter" visible="false" position="0 0.4 0">
+                        <a-sphere color="#555" opacity="0.6" radius="0.1">
+                            <a-animation attribute="position" to="0 0.5 0" dur="1000" repeat="indefinite"></a-animation>
+                            <a-animation attribute="opacity" from="0.6" to="0" dur="1000"
+                                repeat="indefinite"></a-animation>
+                            <a-animation attribute="scale" to="2 2 2" dur="1000" repeat="indefinite"></a-animation>
+                        </a-sphere>
+                    </a-entity>
+
+                    <!-- HAPPY FEATURES -->
+                    <a-entity id="hearts" visible="false" position="0 0.6 0">
+                        <a-entity position="0 0 0">
+                            <a-animation attribute="position" to="0 0.5 0" dur="1500" easing="linear"
+                                repeat="indefinite"></a-animation>
+                            <a-animation attribute="scale" from="0 0 0" to="1 1 1" dur="1500" easing="linear"
+                                repeat="indefinite"></a-animation>
+                            <a-animation attribute="opacity" from="1" to="0" dur="1500" easing="linear"
+                                repeat="indefinite"></a-animation>
+                            <a-text value="♥" color="#e91e63" align="center" width="10"></a-text>
+                        </a-entity>
+                    </a-entity>
+                    <a-torus id="npc-smile" radius="0.08" radius-tubular="0.01" arc="180" rotation="0 0 90"
+                        position="0 -0.1 0.25" color="black" visible="false"></a-torus>
+
+                </a-entity>
+            </a-entity>
+
+            <!-- MONEY BILL -->
+            <a-box id="money-bill" width="0.4" height="0.02" depth="0.2" color="#2ecc71" position="0 1.5 0.5"
+                visible="false">
+                <a-text value="$" rotation="-90 0 0" position="0 0.02 0" color="#0a5f38" align="center"
+                    width="4"></a-text>
+            </a-box>
+
+            <!-- Chat Balloon -->
+            <a-entity id="chat-balloon" position="0 3.5 0" visible="false">
+                <a-plane color="white" width="3.5" height="1.4" opacity="0.98" shadow="cast: true"></a-plane>
+                <a-text id="complaint-text" font="roboto" value="Loading..." align="center" color="#333" width="3.2"
+                    wrap-count="24" position="0 -0.1 0.02"></a-text>
+                <a-text value="CHOOSE RESPONSE:" font="exo2bold" align="center" position="0 1.2 0" width="6"
+                    color="#d35400" shader="msdf" text="wrapCount: 20"></a-text>
+                <a-triangle color="white" vertex-a="0 -0.8 0" vertex-b="-0.2 -0.6 0" vertex-c="0.2 -0.6 0"></a-triangle>
+            </a-entity>
+        </a-entity>
+
+        <a-entity id="ui-container" visible="false">
+            <a-entity id="left-panel" position="-3.2 1.5 -2.5" rotation="0 25 0">
+                <a-entity id="opt-a" class="clickable" position="0 0.8 0" mixin="btn-bg"
+                    event-set__mouseenter="scale: 1.05 1.05 1" event-set__mouseleave="scale: 1 1 1"><a-text id="text-a"
+                        mixin="btn-text" value="A" position="0 0 0.03"></a-text></a-entity>
+                <a-entity id="opt-c" class="clickable" position="0 -0.8 0" mixin="btn-bg"
+                    event-set__mouseenter="scale: 1.05 1.05 1" event-set__mouseleave="scale: 1 1 1"><a-text id="text-c"
+                        mixin="btn-text" value="C" position="0 0 0.03"></a-text></a-entity>
+            </a-entity>
+            <a-entity id="right-panel" position="3.2 1.5 -2.5" rotation="0 -25 0">
+                <a-entity id="opt-b" class="clickable" position="0 0.8 0" mixin="btn-bg"
+                    event-set__mouseenter="scale: 1.05 1.05 1" event-set__mouseleave="scale: 1 1 1"><a-text id="text-b"
+                        mixin="btn-text" value="B" position="0 0 0.03"></a-text></a-entity>
+                <a-entity id="opt-d" class="clickable" position="0 -0.8 0" mixin="btn-bg"
+                    event-set__mouseenter="scale: 1.05 1.05 1" event-set__mouseleave="scale: 1 1 1"><a-text id="text-d"
+                        mixin="btn-text" value="D" position="0 0 0.03"></a-text></a-entity>
+            </a-entity>
+            <a-text id="feedback-text" font="exo2bold" value="" align="center" color="#FFFF00" position="0 0.8 -2"
+                width="4.5" wrap-count="35" shader="msdf"></a-text>
+            <a-entity id="btn-next" class="clickable" position="0 0.3 -2"
+                geometry="primitive: box; width: 2; height: 0.5; depth: 0.1" material="color: #27ae60" visible="false">
+                <a-text value="NEXT CUSTOMER >>" font="exo2bold" align="center" color="white" width="4"
+                    position="0 0 0.06"></a-text>
+            </a-entity>
+        </a-entity>
+
+        <a-entity id="player-camera" position="0 1.6 1">
+            <a-camera look-controls wasd-controls>
+                <a-cursor color="#f1c40f" scale="0.8 0.8 0.8" fuse="true" fuse-timeout="1500"
+                    raycaster="objects: .clickable; far: 20">
+                    <a-animation begin="click" easing="ease-in" attribute="scale" fill="backwards" from="0.1 0.1 0.1"
+                        to="0.8 0.8 0.8"></a-animation>
+                    <a-animation begin="cursor-fusing" easing="ease-in" attribute="scale" fill="forwards"
+                        from="0.8 0.8 0.8" to="0.1 0.1 0.1"></a-animation>
+                </a-cursor>
+            </a-camera>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        const apiKey = "";
+        let isAIMode = false;
+        let currentScenario = null;
+        let interactionEnabled = false;
+        let hasMadeMistake = false;
+
+        const classicScenarios = [
+            {
+                complaint: "I ordered this steak Medium Rare, but it's completely burnt!",
+                options: { A: "Just eat it, it's safer that way.", B: "I'm so sorry! I'll take it back and get a fresh one immediately.", C: "Are you sure? It looks fine to me.", D: "The chef is new, please forgive him." },
+                correct: "B",
+                explanation: "Option B accepts responsibility and offers an immediate solution."
+            }
+        ];
+
+        async function fetchGeminiScenario() {
+            showLoading(true);
+            const prompt = `
+            Create 1 restaurant cashier/server simulation scenario (in English).
+            IMPORTANT: Answer options must be CONCISE (max 15 words).
+            Output JSON: { "complaint": "...", "options": {"A":"...", "B":"...", "C":"...", "D":"..."}, "correct": "C", "explanation": "..." }
+            Randomize correct answer position.
+            `;
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+                });
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                loadScenario(JSON.parse(text));
+                showLoading(false);
+            } catch (e) {
+                console.error("AI Error:", e);
+                document.getElementById('feedback-text').setAttribute('value', "AI connection failed. Using manual mode.");
+                loadScenario(classicScenarios[0]);
+                showLoading(false);
+            }
+        }
+
+        function startGame(mode) {
+            try {
+                isAIMode = (mode === 'ai');
+                document.getElementById('start-overlay').style.display = 'none';
+                if (isAIMode) fetchGeminiScenario(); else loadScenario(classicScenarios[0]);
+            } catch (e) {
+                console.error("Start Game Error:", e);
+                alert("Error starting game: " + e.message);
+            }
+        }
+
+        function showLoading(show) {
+            const loadingMsg = document.getElementById('loading-msg');
+            const npcContainer = document.getElementById('npc-container');
+            if (show) {
+                loadingMsg.style.display = 'block';
+                if (npcContainer) npcContainer.setAttribute('visible', 'false');
+                document.getElementById('ui-container').setAttribute('visible', 'false');
+                document.getElementById('chat-balloon').setAttribute('visible', 'false');
+                document.getElementById('complaint-text').setAttribute('value', "Customer approaching...");
+                document.getElementById('feedback-text').setAttribute('value', "...");
+            } else {
+                loadingMsg.style.display = 'none';
+            }
+        }
+
+        function adjustButtonSize(btnId, textValue) {
+            const btn = document.getElementById(btnId);
+            const wrapCount = 22;
+            const charCount = textValue.length;
+            const lines = Math.ceil(charCount / wrapCount);
+            let newHeight = 0.6 + (lines * 0.15);
+            if (newHeight < 0.7) newHeight = 0.7;
+            btn.setAttribute('geometry', 'height', newHeight);
+        }
+
+        function resetNPC() {
+            try {
+                const container = document.getElementById('npc-container');
+                if (container) container.setAttribute('scale', '1 1 1');
+                const torso = document.getElementById('npc-torso');
+                if (torso) torso.setAttribute('scale', '1 1 1');
+                const armL = document.getElementById('npc-arm-l');
+                if (armL) armL.setAttribute('position', '-0.45 1.5 0');
+                const armR = document.getElementById('npc-arm-r');
+                if (armR) armR.setAttribute('position', '0.45 1.5 0');
+
+                document.getElementById('npc-head').setAttribute('color', '#FFCC80');
+                document.getElementById('npc-eye-l').setAttribute('color', 'black');
+                document.getElementById('npc-eye-r').setAttribute('color', 'black');
+
+                document.getElementById('horns').setAttribute('visible', 'false');
+                document.getElementById('brow-l').setAttribute('visible', 'false');
+                document.getElementById('brow-r').setAttribute('visible', 'false');
+                document.getElementById('smoke-emitter').setAttribute('visible', 'false');
+                document.getElementById('hearts').setAttribute('visible', 'false');
+                document.getElementById('npc-smile').setAttribute('visible', 'false');
+                document.getElementById('chat-balloon').setAttribute('visible', 'false');
+                document.getElementById('love-eye-l').setAttribute('visible', 'false');
+                document.getElementById('love-eye-r').setAttribute('visible', 'false');
+
+                const money = document.getElementById('money-bill');
+                money.setAttribute('visible', 'false');
+                money.removeAttribute('animation');
+                money.setAttribute('position', '0 1.5 0.5');
+
+            } catch (e) { console.error("Error in resetNPC:", e); }
+        }
+
+        function triggerScreenShake() {
+            const camera = document.getElementById('player-camera');
+            const originalPos = { x: 0, y: 1.6, z: 1 };
+            let shakes = 0;
+            const maxShakes = 15;
+            const intensity = 0.2;
+            const interval = setInterval(() => {
+                if (shakes >= maxShakes) { clearInterval(interval); camera.setAttribute('position', originalPos); return; }
+                const xOffset = (Math.random() - 0.5) * intensity;
+                const yOffset = (Math.random() - 0.5) * intensity;
+                camera.setAttribute('position', { x: originalPos.x + xOffset, y: originalPos.y + yOffset, z: originalPos.z });
+                shakes++;
+            }, 40);
+        }
+
+        function makeNPCScary() {
+            try {
+                const container = document.getElementById('npc-container');
+                if (container) container.setAttribute('scale', '1.3 1.3 1.3');
+                const torso = document.getElementById('npc-torso');
+                if (torso) torso.setAttribute('scale', '1.5 1 1.2');
+                const armL = document.getElementById('npc-arm-l');
+                if (armL) armL.setAttribute('position', '-0.6 1.5 0');
+                const armR = document.getElementById('npc-arm-r');
+                if (armR) armR.setAttribute('position', '0.6 1.5 0');
+
+                document.getElementById('npc-head').setAttribute('color', '#8B0000');
+                document.getElementById('npc-eye-l').setAttribute('color', '#FFFF00');
+                document.getElementById('npc-eye-r').setAttribute('color', '#FFFF00');
+
+                document.getElementById('horns').setAttribute('visible', 'true');
+                document.getElementById('brow-l').setAttribute('visible', 'true');
+                document.getElementById('brow-r').setAttribute('visible', 'true');
+                document.getElementById('smoke-emitter').setAttribute('visible', 'true');
+
+                triggerScreenShake();
+                const redOverlay = document.getElementById('red-flash-overlay');
+                redOverlay.style.opacity = 0.7;
+                setTimeout(() => { redOverlay.style.opacity = 0; }, 800);
+            } catch (e) { console.error("Error in makeNPCScary:", e); }
+        }
+
+        function makeNPCHappy(giveMoney) {
+            // Reset transform to normal (if was scary)
+            const container = document.getElementById('npc-container');
+            if (container) container.setAttribute('scale', '1 1 1');
+            const torso = document.getElementById('npc-torso');
+            if (torso) torso.setAttribute('scale', '1 1 1');
+            const armL = document.getElementById('npc-arm-l');
+            if (armL) armL.setAttribute('position', '-0.45 1.5 0');
+            const armR = document.getElementById('npc-arm-r');
+            if (armR) armR.setAttribute('position', '0.45 1.5 0');
+
+            // Hide scary bits
+            document.getElementById('horns').setAttribute('visible', 'false');
+            document.getElementById('brow-l').setAttribute('visible', 'false');
+            document.getElementById('brow-r').setAttribute('visible', 'false');
+            document.getElementById('smoke-emitter').setAttribute('visible', 'false');
+
+            // Restore skin
+            document.getElementById('npc-head').setAttribute('color', '#FFCC80');
+
+            const greenOverlay = document.getElementById('green-flash-overlay');
+            greenOverlay.style.opacity = 0.6;
+            setTimeout(() => { greenOverlay.style.opacity = 0; }, 800);
+
+            document.getElementById('hearts').setAttribute('visible', 'true');
+            document.getElementById('npc-smile').setAttribute('visible', 'true');
+
+            // Love Eyes Logic
+            document.getElementById('npc-eye-l').setAttribute('color', 'black');
+            document.getElementById('npc-eye-r').setAttribute('color', 'black');
+            document.getElementById('love-eye-l').setAttribute('visible', 'true');
+            document.getElementById('love-eye-r').setAttribute('visible', 'true');
+
+            if (giveMoney) {
+                const money = document.getElementById('money-bill');
+                money.setAttribute('visible', 'true');
+                money.setAttribute('animation', {
+                    property: 'position',
+                    to: '-1 1.7 1.5',
+                    dur: 1000,
+                    easing: 'easeOutQuad'
+                });
+            }
+        }
+
+        function animateCustomerWalking() {
+            const npc = document.getElementById('npc-container');
+            npc.removeAttribute('animation');
+            npc.setAttribute('position', '0 0 -28');
+            npc.setAttribute('visible', 'true');
+
+            setTimeout(() => {
+                npc.setAttribute('animation', { property: 'position', to: '0 0 -4.2', dur: 3000, easing: 'linear' });
+            }, 50);
+
+            setTimeout(() => {
+                document.getElementById('ui-container').setAttribute('visible', 'true');
+                document.getElementById('chat-balloon').setAttribute('visible', 'true');
+                interactionEnabled = true;
+            }, 3050);
+        }
+
+        function loadScenario(data) {
+            try {
+                currentScenario = data;
+                hasMadeMistake = false;
+
+                document.getElementById('ui-container').setAttribute('visible', 'false');
+                document.getElementById('btn-next').setAttribute('visible', 'false');
+                document.getElementById('success-popup').setAttribute('visible', 'false');
+                document.getElementById('success-popup').setAttribute('scale', '0 0 0');
+
+                resetNPC();
+
+                const options = ['A', 'B', 'C', 'D'];
+                options.forEach(key => {
+                    const id = `opt-${key.toLowerCase()}`;
+                    const el = document.getElementById(id);
+                    const textEl = document.getElementById(`text-${key.toLowerCase()}`);
+                    el.setAttribute('material', 'color', '#d35400');
+                    const val = `${key}: ${data.options[key]}`;
+                    textEl.setAttribute('value', val);
+                    adjustButtonSize(id, val);
+                });
+
+                document.getElementById('complaint-text').setAttribute('value', `"${data.complaint}"`);
+                document.getElementById('feedback-text').setAttribute('value', "Select the best response...");
+                document.getElementById('feedback-text').setAttribute('color', "#f1c40f");
+
+                animateCustomerWalking();
+
+            } catch (e) {
+                console.error("Error in loadScenario:", e);
+                document.getElementById('error-msg').innerText = "System Error: " + e.message;
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        function checkAnswer(choice) {
+            if (!interactionEnabled) return;
+            const isCorrect = choice === currentScenario.correct;
+            const btn = document.getElementById(`opt-${choice.toLowerCase()}`);
+
+            if (isCorrect) {
+                makeNPCHappy(!hasMadeMistake);
+
+                const popup = document.getElementById('success-popup');
+                const successMsg = document.getElementById('success-msg');
+                successMsg.setAttribute('value', currentScenario.explanation);
+
+                popup.setAttribute('visible', 'true');
+                popup.emit('show');
+
+                document.getElementById('ui-container').setAttribute('visible', 'false');
+                document.getElementById('chat-balloon').setAttribute('visible', 'false');
+
+                interactionEnabled = false;
+
+                if (isAIMode) {
+                    setTimeout(() => {
+                        popup.emit('hide');
+                        setTimeout(() => { fetchGeminiScenario(); }, 1000);
+                    }, 3000);
+                } else {
+                    setTimeout(() => {
+                        popup.emit('hide');
+                        document.getElementById('ui-container').setAttribute('visible', 'true');
+                        document.getElementById('btn-next').setAttribute('visible', 'true');
+                    }, 3000);
+                }
+
+            } else {
+                hasMadeMistake = true;
+                btn.setAttribute('material', 'color', '#c0392b');
+                const fb = document.getElementById('feedback-text');
+                makeNPCScary();
+                fb.setAttribute('value', "WRONG! THE CUSTOMER IS FURIOUS!");
+                fb.setAttribute('color', "#FF0000");
+            }
+        }
+
+        ['a', 'b', 'c', 'd'].forEach(k => document.querySelector(`#opt-${k}`).addEventListener('click', () => checkAnswer(k.toUpperCase())));
+        document.querySelector('#btn-next').addEventListener('click', () => fetchGeminiScenario());
+    </script>
+</body>
+
+</html>
